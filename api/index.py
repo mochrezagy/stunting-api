@@ -40,6 +40,7 @@ def home():
     return jsonify({"status": "API Stunting Ready!"})
 
 @app.route('/predict', methods=['POST'])
+@app.route('/predict/', methods=['POST'])
 def predict():
     if model is None or scaler is None:
         return jsonify({"status": "error", "message": f"Model belum siap: {load_error}"}), 500
