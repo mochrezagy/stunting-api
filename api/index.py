@@ -1,4 +1,7 @@
 import os
+
+os.environ['LIGHTGBM_SKIP_OPENMP'] = '1'
+
 import pickle
 import numpy as np
 import pandas as pd
