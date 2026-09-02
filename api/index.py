@@ -7,26 +7,40 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = os.path.abspath(os.path.join(CURRENT_DIR, '..'))
+BASE_DIR = os.path.dirname(CURRENT_DIR)
 
-scaler_path = os.path.join(BASE_DIR, 'scaler.pkl')
-model_path = os.path.join(BASE_DIR, 'model_stunting.pkl')
+def load_file(filename):
+    path_root = os.path.join(BASE_DIR, filename)
+    path_api = os.path.join(CURRENT_DIR, filename)
+    if os.path.exists(path_root):
+        return pickle.load(open(path_root, 'rb'))
+    elif os.path.exists(path_api):
+        return pickle.load(open(path_api, 'rb'))
+    else:
+        raise FileNotFoundError(f"File {filename} tidak ditemukan.")
 
-with open(scaler_path, 'rb') as f:
-    scaler = pickle.load(f)
-
-with open(model_path, 'rb') as f:
-    model = pickle.load(f)
+try:
+    scaler = load_file('scaler.pkl')
+    model = load_file('model_stunting.pkl')
+except Exception as e:
+    scaler = None
+    model = None
+    load_error = str(e)
 
 @app.route('/', methods=['GET'])
 def home():
+    if model is None or scaler is None:
+        return jsonify({"status": "error", "message": f"Gagal memuat model: {load_error}"}), 500
     return jsonify({"status": "API Stunting Ready!"})
 
 @app.route('/predict', methods=['POST'])
 def predict():
+    if model is None or scaler is None:
+        return jsonify({"status": "error", "message": f"Model belum siap: {load_error}"}), 500
+
     try:
         data = request.get_json()
-        
+
         umur_bulan = float(data['umur_bulan'])
         tb_cm      = float(data['tb_cm'])
         bb_kg      = float(data['bb_kg'])
@@ -37,7 +51,7 @@ def predict():
         input_scaled = pd.DataFrame(scaler.transform(input_df), columns=feature_names)
 
         prediction = int(model.predict(input_scaled)[0])
-        
+
         try:
             probabilities = model.predict_proba(input_scaled)[0]
             confidence = float(np.max(probabilities))
