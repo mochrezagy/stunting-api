@@ -26,10 +26,8 @@ def load_file(filename):
         raise FileNotFoundError(f"File {filename} tidak ditemukan.")
 
 try:
-    scaler = load_file('scaler.pkl')
     model = load_file('model_stunting.pkl')
 except Exception as e:
-    scaler = None
     model = None
     load_error = str(e)
 
@@ -42,7 +40,7 @@ def home():
 @app.route('/predict', methods=['POST'])
 @app.route('/predict/', methods=['POST'])
 def predict():
-    if model is None or scaler is None:
+    if model is None:
         return jsonify({"status": "error", "message": f"Model belum siap: {load_error}"}), 500
 
     try:
@@ -55,12 +53,11 @@ def predict():
 
         feature_names = ['umur_bulan', 'tb_cm', 'bb_kg', 'lila_cm']
         input_df = pd.DataFrame([[umur_bulan, tb_cm, bb_kg, lila_cm]], columns=feature_names)
-        input_scaled = pd.DataFrame(scaler.transform(input_df), columns=feature_names)
 
-        prediction = int(model.predict(input_scaled)[0])
+        prediction = int(model.predict(input_df)[0])
 
         try:
-            probabilities = model.predict_proba(input_scaled)[0]
+            probabilities = model.predict_proba(input_df)[0]
             confidence = float(np.max(probabilities))
         except Exception:
             confidence = 1.0
