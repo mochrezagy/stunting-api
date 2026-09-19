@@ -26,14 +26,20 @@ def load_file(filename):
         raise FileNotFoundError(f"File {filename} tidak ditemukan.")
 
 try:
-    model = load_file('model_stunting.pkl')
+    model_data = load_file('model_stunting.pkl')
+    
+    # Ekstrak objek model jika .pkl dibungkus dictionary
+    if isinstance(model_data, dict) and 'model' in model_data:
+        model = model_data['model']
+    else:
+        model = model_data
 except Exception as e:
     model = None
     load_error = str(e)
 
 @app.route('/', methods=['GET'])
 def home():
-    if model is None or scaler is None:
+    if model is None:
         return jsonify({"status": "error", "message": f"Gagal memuat model: {load_error}"}), 500
     return jsonify({"status": "API Stunting Ready!"})
 
